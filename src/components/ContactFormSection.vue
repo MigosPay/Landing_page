@@ -30,6 +30,7 @@
 </template>
 
 <script>
+import { api } from 'boot/axios'
 export default {
   name: 'ContactFormSection',
   data () {
@@ -44,19 +45,31 @@ export default {
     sendMessage () {
       const _ = this
       if (!_.name.length || !_.email.length || !_.message.length) {
-        console.log('Please fill the form')
+        _.notifyAlert('negative', 'mdi-alert', 'Please fill the form', 'center')
+        return
+      }
+      const regex = /\S+@\S+\.\S+/
+      if (!regex.test(_.email)) {
+        _.notifyAlert('negative', 'mdi-alert', 'Please provide a valid email address', 'center')
         return
       }
       _.loading = true
-      const formData = new FormData()
-      formData.append('name', _.name)
-      formData.append('email', _.email)
-      formData.append('message', _.message)
-      _.$axios.post(
-        'hello@migospay.com', formData
+      const mesObj = {
+        name: _.name,
+        email: _.email,
+        message: _.message
+      }
+      api.post(
+        'sendmail', JSON.stringify(mesObj)
       ).then((res) => {
         // Stop the loading here...
         _.loading = false
+        const data = res.data
+        if (data.error) {
+          _.notifyAlert('negative', 'mdi-alert', data.message, 'center')
+          return
+        }
+        _.notifyAlert('positive', 'mdi-information-outline', 'Message Sent Successfully', 'center')
         // Clear the form inputs
         _.name = ''
         _.email = ''
@@ -64,6 +77,17 @@ export default {
       }).catch((err) => {
         console.log(err)
         _.loading = false
+        _.notifyAlert('negative', 'mdi-alert', 'Oops, please try again', 'center')
+      })
+    },
+    notifyAlert (type, icon, msg, position) {
+      const _ = this
+      _.$q.notify({
+        type: type,
+        icon: icon,
+        message: msg,
+        position: position,
+        time: 1000
       })
     }
   }
